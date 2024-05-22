@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"text/template"
@@ -90,14 +91,10 @@ func defaultContainerdArchives() []File {
 
 // FirstUsernetIndex gets the index of first usernet network under l.Network[]. Returns -1 if no usernet network found
 func FirstUsernetIndex(l *LimaYAML) int {
-	for i := range l.Networks {
-		nwName := l.Networks[i].Lima
-		isUsernet, _ := networks.Usernet(nwName)
-		if isUsernet {
-			return i
-		}
-	}
-	return -1
+	return slices.IndexFunc(l.Networks, func(network Network) bool {
+		isUsernet, _ := networks.Usernet(network.Lima)
+		return isUsernet
+	})
 }
 
 func MACAddress(uniqueID string) string {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"reflect"
+	"slices"
 	"sync"
 	"syscall"
 	"time"
@@ -258,36 +259,21 @@ func (a *agent) LocalPorts(_ context.Context) ([]*api.IPPort, error) {
 
 	for _, ipt := range ipts {
 		// Make sure the port isn't already listed from procnettcp
-		found := false
-		for _, re := range res {
-			if re.Port == int32(ipt.Port) {
-				found = true
-			}
-		}
-		if !found {
-			res = append(res,
-				&api.IPPort{
-					Ip:   ipt.IP.String(),
-					Port: int32(ipt.Port),
-				})
+		if slices.IndexFunc(res, func(re *api.IPPort) bool { return re.Port == int32(ipt.Port) }) == -1 {
+			res = append(res, &api.IPPort{
+				Ip:   ipt.IP.String(),
+				Port: int32(ipt.Port),
+			})
 		}
 	}
 
 	kubernetesEntries := a.kubernetesServiceWatcher.GetPorts()
 	for _, entry := range kubernetesEntries {
-		found := false
-		for _, re := range res {
-			if re.Port == int32(entry.Port) {
-				found = true
-			}
-		}
-
-		if !found {
-			res = append(res,
-				&api.IPPort{
-					Ip:   entry.IP.String(),
-					Port: int32(entry.Port),
-				})
+		if slices.IndexFunc(res, func(re *api.IPPort) bool { return re.Port == int32(entry.Port) }) == -1 {
+			res = append(res, &api.IPPort{
+				Ip:   entry.IP.String(),
+				Port: int32(entry.Port),
+			})
 		}
 	}
 
