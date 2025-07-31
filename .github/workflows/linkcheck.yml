@@ -1,0 +1,38 @@
+name: Check Lima website links
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: "00 12 * * 1" # Run at 12:00 UTC every Monday
+jobs:
+  linkcheck:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+    - name: Check links
+      id: linkcheck
+      uses: filiph/linkcheck@f2c15a0be0d9c83def5df3edcc0f2d6582845f2d # v3.0.0
+      with:
+        arguments: --check-anchors https://lima-vm.io/
+      continue-on-error: true
+    - name: Create linkcheck report
+      if: steps.linkcheck.outputs.exit_code != 0
+      run: |
+        cat > linkcheck.md << 'EOF'
+        # Link Check Report
+
+        The following issues were found when checking links on https://lima-vm.io/:
+
+        ## Details
+
+        ${{ steps.linkcheck.outputs.stdout }}
+
+        Generated on: $(date)
+        EOF
+    - name: Create issue from a file
+      if: steps.linkcheck.outputs.exit_code != 0
+      uses: peter-evans/create-issue-from-file@e8ef132d6df98ed982188e460ebb3b5d4ef3a9cd # v5.0.1
+      with:
+        title: "Link check report - $(date +'%Y-%m-%d %H:%M UTC')"
+        content-filepath: linkcheck.md
+        labels: documentation, linkcheck
