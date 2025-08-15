@@ -42,10 +42,10 @@ type Entry struct {
 }
 
 func Parse(r io.Reader, kind Kind) ([]Entry, error) {
-	return ParseWithEndian(r, kind, cpu.IsBigEndian)
+	return parseWithEndian(r, kind, cpu.IsBigEndian)
 }
 
-func ParseWithEndian(r io.Reader, kind Kind, isBE bool) ([]Entry, error) {
+func parseWithEndian(r io.Reader, kind Kind, isBE bool) ([]Entry, error) {
 	switch kind {
 	case TCP, TCP6, UDP, UDP6:
 	default:
@@ -78,7 +78,7 @@ func ParseWithEndian(r io.Reader, kind Kind, isBE bool) ([]Entry, error) {
 		default:
 			// localAddress is like "0100007F:053A"
 			localAddress := fields[fieldNames["local_address"]]
-			ip, port, err := ParseAddressWithEndian(localAddress, isBE)
+			ip, port, err := parseAddressWithEndian(localAddress, isBE)
 			if err != nil {
 				return entries, err
 			}
@@ -105,24 +105,7 @@ func ParseWithEndian(r io.Reader, kind Kind, isBE bool) ([]Entry, error) {
 	return entries, nil
 }
 
-// ParseAddress parses a string.
-//
-// Little endian hosts:
-// "0100007F:0050"                         (127.0.0.1:80)
-// "000080FE00000000FF57A6705DC771FE:0050" ([fe80::70a6:57ff:fe71:c75d]:80)
-// "00000000000000000000000000000000:0050" (0.0.0.0:80)
-//
-// Big endian hosts:
-// "7F000001:0050"                         (127.0.0.1:80)
-// "FE8000000000000070A657FFFE71C75D:0050" ([fe80::70a6:57ff:fe71:c75d]:80)
-// "00000000000000000000000000000000:0050" (0.0.0.0:80)
-//
-// See https://serverfault.com/questions/592574/why-does-proc-net-tcp6-represents-1-as-1000
-func ParseAddress(s string) (net.IP, uint16, error) {
-	return ParseAddressWithEndian(s, cpu.IsBigEndian)
-}
-
-func ParseAddressWithEndian(s string, isBE bool) (net.IP, uint16, error) {
+func parseAddressWithEndian(s string, isBE bool) (net.IP, uint16, error) {
 	split := strings.SplitN(s, ":", 2)
 	if len(split) != 2 {
 		return nil, 0, fmt.Errorf("unparsable address %q", s)
